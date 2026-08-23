@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "theme": {
+    "id": "cicc",
+    "name": "中金 · 绛金",
+    "primary": "#5B1B35",
+    "accent": "#B69A68",
+    "background": "#F4F1EB",
+    "surface": "#FFFEFC",
+    "ink": "#171519",
+    "muted": "#6F686B"
+  },
+  "leaveColors": {
+    "年假": "#A4473E",
+    "产假": "#C0617E",
+    "丧假": "#4B5563",
+    "病假": "#D97706",
+    "婚假": "#D45774",
+    "特别假": "#7755A6",
+    "生日假": "#0F8E8E",
+    "侍产假": "#2F6FAD",
+    "无薪假": "#718096",
+    "补假": "#2F855A",
+    "其他": "#9867A8",
+    "取消休假": "#B4232C"
+  },
+  "holidayColor": "#79A98B",
+  "annualAllowance": {
+    "2024": null,
+    "2025": null,
+    "2026": null
+  },
+  "specialAllowance": {
+    "2024": null,
+    "2025": null,
+    "2026": null
+  },
+  "holidaySourceUrl": "https://www.1823.gov.hk/common/ical/sc.json",
+  "updatedAt": "2026-08-23T20:18:23+08:00"
+}

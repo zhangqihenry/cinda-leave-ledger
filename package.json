@@ -1,0 +1,35 @@
+{
+  "name": "cinda-leave-ledger",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "tauri": "tauri",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build --no-bundle",
+    "desktop:build:windows": "tauri build --no-bundle",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "seed": "node scripts/normalize-oa.mjs"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "idb": "^8.0.3",
+    "papaparse": "^5.5.3",
+    "vue": "^3.5.40",
+    "vue-router": "^5.0.4"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/node": "^24.13.3",
+    "@types/papaparse": "^5.3.17",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vue/tsconfig": "^0.9.1",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0",
+    "vitest": "^4.0.18",
+    "vue-tsc": "^3.3.8"
+  }
+}

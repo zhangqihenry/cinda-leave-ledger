@@ -1,0 +1,18 @@
+[package]
+name = "cinda-leave-ledger"
+version = "0.1.0"
+description = "信达国际员工个人假期管理工具"
+authors = ["Human Resources Department"]
+edition = "2021"
+
+[lib]
+name = "leave_ledger_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = [] }
