@@ -53,7 +53,7 @@ npm ci
 npm run desktop:build:windows
 ```
 
-产物位于 `src-tauri/target/release/cinda-leave-ledger.exe`，无需安装。仓库中的 `.github/workflows/build-windows.yml` 也可通过 GitHub Actions 手动生成同一文件。
+产物位于 `src-tauri/target/release/cinda-leave-ledger.exe`，无需安装。仓库中的 `.github/workflows/build-windows.yml` 也可通过 GitHub Actions 手动生成同一文件。推送 `v*` 版本标签时，工作流会在构建成功后自动创建 GitHub Release，并把该 EXE 作为 Release 附件发布。
 
 把新的 OA CSV 转换为初始 JSON 数据：
 
