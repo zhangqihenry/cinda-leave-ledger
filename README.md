@@ -21,7 +21,7 @@
 
 标准网页受浏览器安全策略限制，不能在没有用户授权的情况下任意写入网页所在目录。设置页的“连接数据文件夹”使用 File System Access API，可在 Chrome 或 Edge 中授权 `index.html` 所在文件夹。未授权时，记录保存在浏览器 IndexedDB，也可手动导出 JSON 备份。
 
-Tauri 桌面版会在系统应用数据目录自动创建并维护 `leave-records.json` 与 `leave-config.json`。Windows 默认目录为 `%APPDATA%\com.cindainternational.hr.leaveledger`。真实请假记录已从 Git 版本控制中排除。
+Tauri 桌面版会在 EXE 同目录自动创建 `Cinda Leave Ledger Data` 文件夹，并在其中维护 `leave-records.json` 与 `leave-config.json`。真实请假记录已从 Git 版本控制中排除。
 
 ## 本地运行
 

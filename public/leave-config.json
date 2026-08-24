@@ -1,14 +1,14 @@
 {
   "version": 1,
   "theme": {
-    "id": "cicc",
-    "name": "中金 · 绛金",
-    "primary": "#5B1B35",
-    "accent": "#B69A68",
-    "background": "#F4F1EB",
-    "surface": "#FFFEFC",
-    "ink": "#171519",
-    "muted": "#6F686B"
+    "id": "cinda",
+    "name": "信达 · 蓝红",
+    "primary": "#283597",
+    "accent": "#DE050E",
+    "background": "#F1F3F8",
+    "surface": "#FFFFFF",
+    "ink": "#16192A",
+    "muted": "#697086"
   },
   "leaveColors": {
     "年假": "#A4473E",

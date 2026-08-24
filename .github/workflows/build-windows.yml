@@ -54,5 +54,5 @@ jobs:
           gh release create "${{ github.ref_name }}"
           "src-tauri/target/release/cinda-leave-ledger.exe#Cinda Leave Ledger Windows x64 免安装版"
           --verify-tag
-          --generate-notes
+          --notes "小调整及小修复。"
           --latest

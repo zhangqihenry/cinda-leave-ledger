@@ -89,7 +89,7 @@ export const OFFICIAL_HOLIDAY_URL = 'https://www.1823.gov.hk/common/ical/sc.json
 export function createDefaultConfig(): LeaveConfig {
   return {
     version: 1,
-    theme: { ...THEMES[0] },
+    theme: { ...THEMES[1] },
     leaveColors: { ...DEFAULT_LEAVE_COLORS },
     holidayColor: '#79A98B',
     annualAllowance: { [String(new Date().getFullYear())]: null },

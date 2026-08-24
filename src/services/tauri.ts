@@ -5,6 +5,7 @@ export interface DesktopFileSnapshot {
   data: DataFile | null
   config: LeaveConfig | null
   directory: string
+  firstRun: boolean
 }
 
 export function isTauriRuntime(): boolean {

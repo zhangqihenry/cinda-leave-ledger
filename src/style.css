@@ -1,15 +1,15 @@
 :root {
   font-family: Inter, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
-  color: var(--ink, #171519);
-  background: var(--page-bg, #f4f1eb);
+  color: var(--ink, #16192a);
+  background: var(--page-bg, #f1f3f8);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --theme-primary: #5b1b35;
-  --theme-accent: #b69a68;
-  --page-bg: #f4f1eb;
-  --surface: #fffefc;
-  --ink: #171519;
-  --muted: #6f686b;
+  --theme-primary: #283597;
+  --theme-accent: #de050e;
+  --page-bg: #f1f3f8;
+  --surface: #ffffff;
+  --ink: #16192a;
+  --muted: #697086;
   --line: color-mix(in srgb, var(--ink) 16%, transparent);
   --soft-line: color-mix(in srgb, var(--ink) 9%, transparent);
 }

@@ -5,7 +5,10 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use tauri::{AppHandle, Manager};
+
+const DATA_DIRECTORY_NAME: &str = "Cinda Leave Ledger Data";
+const DATA_FILE_NAME: &str = "leave-records.json";
+const CONFIG_FILE_NAME: &str = "leave-config.json";
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -13,13 +16,30 @@ struct AppFiles {
     data: Option<Value>,
     config: Option<Value>,
     directory: String,
+    first_run: bool,
 }
 
-fn app_data_directory(app: &AppHandle) -> Result<PathBuf, String> {
-    let directory = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| format!("无法确定应用数据目录：{error}"))?;
+fn data_directory_for_executable(executable: &Path) -> Result<PathBuf, String> {
+    let parent = executable
+        .parent()
+        .ok_or_else(|| "无法确定 EXE 所在目录".to_string())?;
+    Ok(parent.join(DATA_DIRECTORY_NAME))
+}
+
+fn portable_data_directory() -> Result<PathBuf, String> {
+    let executable =
+        std::env::current_exe().map_err(|error| format!("无法确定 EXE 所在目录：{error}"))?;
+    data_directory_for_executable(&executable)
+}
+
+fn is_first_run(directory: &Path) -> bool {
+    !directory.is_dir()
+        || !directory.join(DATA_FILE_NAME).is_file()
+        || !directory.join(CONFIG_FILE_NAME).is_file()
+}
+
+fn ensure_data_directory() -> Result<PathBuf, String> {
+    let directory = portable_data_directory()?;
     fs::create_dir_all(&directory).map_err(|error| format!("无法创建应用数据目录：{error}"))?;
     Ok(directory)
 }
@@ -51,20 +71,23 @@ fn write_json(path: &Path, value: &Value) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn load_app_files(app: AppHandle) -> Result<AppFiles, String> {
-    let directory = app_data_directory(&app)?;
+fn load_app_files() -> Result<AppFiles, String> {
+    let directory = portable_data_directory()?;
+    let first_run = is_first_run(&directory);
+    fs::create_dir_all(&directory).map_err(|error| format!("无法创建应用数据目录：{error}"))?;
     Ok(AppFiles {
-        data: read_json(&directory.join("leave-records.json"))?,
-        config: read_json(&directory.join("leave-config.json"))?,
+        data: read_json(&directory.join(DATA_FILE_NAME))?,
+        config: read_json(&directory.join(CONFIG_FILE_NAME))?,
         directory: directory.to_string_lossy().into_owned(),
+        first_run,
     })
 }
 
 #[tauri::command]
-fn save_app_files(app: AppHandle, data: Value, config: Value) -> Result<(), String> {
-    let directory = app_data_directory(&app)?;
-    write_json(&directory.join("leave-records.json"), &data)?;
-    write_json(&directory.join("leave-config.json"), &config)
+fn save_app_files(data: Value, config: Value) -> Result<(), String> {
+    let directory = ensure_data_directory()?;
+    write_json(&directory.join(DATA_FILE_NAME), &data)?;
+    write_json(&directory.join(CONFIG_FILE_NAME), &config)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -73,4 +96,35 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![load_app_files, save_app_files])
         .run(tauri::generate_context!())
         .expect("启动休假账本时发生错误");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn data_directory_is_next_to_executable() {
+        let executable = Path::new("C:/Portable/cinda-leave-ledger.exe");
+        let directory = data_directory_for_executable(executable).unwrap();
+        assert_eq!(
+            directory,
+            Path::new("C:/Portable").join(DATA_DIRECTORY_NAME)
+        );
+    }
+
+    #[test]
+    fn first_run_requires_directory_and_both_files() {
+        let directory =
+            std::env::temp_dir().join(format!("cinda-leave-ledger-test-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&directory);
+        assert!(is_first_run(&directory));
+
+        fs::create_dir_all(&directory).unwrap();
+        fs::write(directory.join(DATA_FILE_NAME), "{}").unwrap();
+        assert!(is_first_run(&directory));
+
+        fs::write(directory.join(CONFIG_FILE_NAME), "{}").unwrap();
+        assert!(!is_first_run(&directory));
+        fs::remove_dir_all(&directory).unwrap();
+    }
 }

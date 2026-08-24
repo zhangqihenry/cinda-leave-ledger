@@ -78,12 +78,12 @@ async function submit() {
     </section>
 
     <section class="settings-section storage-section">
-      <header class="settings-heading"><span>04</span><div><h2>数据文件</h2><p>浏览器版可连接指定文件夹；桌面版会自动维护本地 JSON 数据文件。</p></div></header>
+      <header class="settings-heading"><span>04</span><div><h2>数据文件</h2><p>浏览器版可连接指定文件夹；桌面版会在 EXE 同目录的数据文件夹中维护 JSON 文件。</p></div></header>
       <div class="storage-card">
-        <div class="storage-status"><span :class="{ connected: state.storageMode === '数据文件夹' || state.storageMode === 'Tauri 本地文件' }"></span><div><strong>{{ state.storageMode }}</strong><p>{{ state.directoryName ? `当前文件夹：${state.directoryName}` : '当前使用浏览器 IndexedDB 保存；可随时导出备份。' }}</p></div></div>
-        <div class="storage-actions"><button v-if="state.storageMode !== 'Tauri 本地文件'" class="button primary" type="button" @click="connectDirectory">连接数据文件夹</button><button class="button secondary" type="button" @click="exportData">导出记录 JSON</button><button class="button secondary" type="button" @click="exportConfig">导出设置 JSON</button></div>
+        <div class="storage-status"><span :class="{ connected: state.storageMode === '数据文件夹' || state.storageMode === '桌面数据文件夹' }"></span><div><strong>{{ state.storageMode }}</strong><p>{{ state.directoryName ? `当前文件夹：${state.directoryName}` : '当前使用浏览器 IndexedDB 保存；可随时导出备份。' }}</p></div></div>
+        <div class="storage-actions"><button v-if="state.storageMode !== '桌面数据文件夹'" class="button primary" type="button" @click="connectDirectory">连接数据文件夹</button><button class="button secondary" type="button" @click="exportData">导出记录 JSON</button><button class="button secondary" type="button" @click="exportConfig">导出设置 JSON</button></div>
       </div>
-      <p v-if="state.storageMode === 'Tauri 本地文件'" class="browser-note">桌面版会在上述应用数据目录自动读写 leave-records.json 与 leave-config.json，无需浏览器授权。</p>
+      <p v-if="state.storageMode === '桌面数据文件夹'" class="browser-note">桌面版会在 EXE 旁自动建立 Cinda Leave Ledger Data 文件夹，并在其中读写 leave-records.json 与 leave-config.json。</p>
       <p v-else class="browser-note">网页受浏览器安全限制，首次连接文件夹时需要你主动授权。建议选择 index.html 所在的网页构建目录；之后会在同一目录维护 leave-records.json 与 leave-config.json 两个文件。</p>
     </section>
 

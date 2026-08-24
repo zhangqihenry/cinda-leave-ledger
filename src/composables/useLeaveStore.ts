@@ -32,7 +32,7 @@ const state = reactive({
   holidays: [] as Array<{ date: string; name: string }>,
   holidayLive: false,
   firstRun: false,
-  storageMode: '浏览器本地存储' as '浏览器本地存储' | '数据文件夹' | 'Tauri 本地文件',
+  storageMode: '浏览器本地存储' as '浏览器本地存储' | '数据文件夹' | '桌面数据文件夹',
   directoryName: '',
   toasts: [] as ToastMessage[],
 })
@@ -92,11 +92,18 @@ function reconcileCancellationLinks(records: LeaveRecord[]) {
 
 async function persist(silent = true) {
   state.config.updatedAt = new Date().toISOString()
-  const data = await saveCachedData(state.records)
-  await saveCachedConfig(state.config)
-  if (desktopMode) await saveTauriFiles(data, state.config)
-  else if (directoryHandle) await saveDirectoryFiles(directoryHandle, data, state.config)
-  if (!silent) showToast(directoryHandle ? '数据文件已更新' : '更改已保存到当前设备')
+  const data: DataFile = {
+    version: 1,
+    records: JSON.parse(JSON.stringify(state.records)),
+    updatedAt: new Date().toISOString(),
+  }
+  if (desktopMode) {
+    await saveTauriFiles(data, state.config)
+  } else {
+    await Promise.all([saveCachedData(state.records), saveCachedConfig(state.config)])
+    if (directoryHandle) await saveDirectoryFiles(directoryHandle, data, state.config)
+  }
+  if (!silent) showToast(desktopMode || directoryHandle ? '数据文件已更新' : '更改已保存到当前设备')
 }
 
 async function initialize() {
@@ -104,12 +111,12 @@ async function initialize() {
   desktopMode = isTauriRuntime()
   const defaultConfig = createDefaultConfig()
   const [cachedData, cachedConfig, staticData, staticConfig, staticCsv, desktopFiles, holidayResult] = await Promise.all([
-    loadCachedData(),
-    loadCachedConfig(),
-    loadStaticJson<DataFile>('./leave-records.json'),
-    loadStaticJson<LeaveConfig>('./leave-config.json'),
-    loadStaticText('./leave-records.csv'),
-    loadTauriFiles(),
+    desktopMode ? Promise.resolve(null) : loadCachedData(),
+    desktopMode ? Promise.resolve(null) : loadCachedConfig(),
+    desktopMode ? Promise.resolve(null) : loadStaticJson<DataFile>('./leave-records.json'),
+    desktopMode ? Promise.resolve(null) : loadStaticJson<LeaveConfig>('./leave-config.json'),
+    desktopMode ? Promise.resolve(null) : loadStaticText('./leave-records.csv'),
+    desktopMode ? loadTauriFiles() : Promise.resolve(null),
     loadHongKongHolidays(),
   ])
 
@@ -124,35 +131,38 @@ async function initialize() {
     state.directoryName = directoryHandle.name
   }
   if (desktopMode) {
-    state.storageMode = 'Tauri 本地文件'
-    state.directoryName = desktopFiles?.directory ?? '应用数据目录'
+    state.storageMode = '桌面数据文件夹'
+    state.directoryName = desktopFiles?.directory ?? 'EXE 同目录下的 Cinda Leave Ledger Data'
   }
 
-  const loadedConfig = desktopFiles?.config ?? directoryConfig ?? cachedConfig ?? staticConfig ?? defaultConfig
+  const loadedConfig = desktopMode
+    ? desktopFiles?.config ?? defaultConfig
+    : directoryConfig ?? cachedConfig ?? staticConfig ?? defaultConfig
   state.config = normalizeConfig(loadedConfig)
   state.holidays = holidayResult.holidays
   state.holidayLive = holidayResult.live
 
-  const selectedData = desktopFiles?.data ?? directoryData ?? cachedData ?? staticData
+  const selectedData = desktopMode ? desktopFiles?.data : directoryData ?? cachedData ?? staticData
   if (selectedData?.records) {
     state.records = selectedData.records
+    state.firstRun = desktopMode ? desktopFiles?.firstRun ?? false : false
   } else if (staticCsv) {
     const preview = parseOaCsv(staticCsv, [])
     state.records = preview.ready
     state.firstRun = false
   } else {
     state.records = []
-    state.firstRun = true
+    state.firstRun = desktopMode ? desktopFiles?.firstRun ?? true : true
   }
   reconcileCancellationLinks(state.records)
   applyTheme(state.config)
   state.ready = true
   const initialData: DataFile = { version: 1, records: JSON.parse(JSON.stringify(state.records)), updatedAt: new Date().toISOString() }
-  await Promise.allSettled([
-    saveCachedData(state.records),
-    saveCachedConfig(state.config),
-    desktopMode ? saveTauriFiles(initialData, state.config) : Promise.resolve(),
-  ])
+  if (desktopMode) {
+    await Promise.allSettled([saveTauriFiles(initialData, state.config)])
+  } else {
+    await Promise.allSettled([saveCachedData(state.records), saveCachedConfig(state.config)])
+  }
 }
 
 async function addRecord(record: LeaveRecord) {
