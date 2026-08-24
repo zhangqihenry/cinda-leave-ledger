@@ -1,35 +1,63 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import AppHeader from './components/AppHeader.vue'
 import ToastStack from './components/ToastStack.vue'
 import WelcomeDialog from './components/WelcomeDialog.vue'
+import { useAuthStore } from './composables/useAuthStore'
 import { useLeaveStore } from './composables/useLeaveStore'
-import { useRouter } from 'vue-router'
+import AuthView from './views/AuthView.vue'
+import AdminView from './views/AdminView.vue'
 
-const { state, initialize, completeFirstRun, connectDirectory } = useLeaveStore()
-const router = useRouter()
-onMounted(initialize)
+const auth = useAuthStore()
+const leave = useLeaveStore()
+const loadError = ref('')
 
-async function startEmpty() { await completeFirstRun() }
-async function startImport() { await completeFirstRun(); await router.push('/add') }
-async function startFolder() { await connectDirectory(); await completeFirstRun() }
-async function startSettings() { await completeFirstRun(); await router.push('/settings') }
+async function startLeaveSession() {
+  loadError.value = ''
+  leave.resetSession()
+  try {
+    await leave.initialize()
+  } catch (error) {
+    loadError.value = (error as Error).message || '无法读取账户数据。'
+  }
+}
+
+async function handleAuthenticated() {
+  if (auth.state.user?.role === 'user') await startLeaveSession()
+}
+
+async function handleLogout() {
+  try {
+    await auth.logout()
+  } finally {
+    leave.resetSession()
+  }
+}
+
+onMounted(async () => {
+  try {
+    await auth.initialize()
+    if (auth.state.desktopMode || auth.state.user?.role === 'user') await startLeaveSession()
+  } catch (error) {
+    loadError.value = (error as Error).message || '应用初始化失败。'
+  }
+})
 </script>
 
 <template>
-  <div class="app-shell">
-    <AppHeader />
-    <main v-if="state.ready"><RouterView /></main>
+  <main v-if="!auth.state.ready" class="standalone-loading loading-state" aria-live="polite"><span></span><p>正在启动休假账本</p></main>
+  <AuthView v-else-if="!auth.state.desktopMode && !auth.state.user" @authenticated="handleAuthenticated" />
+  <AdminView v-else-if="auth.state.user?.role === 'admin'" @logout="handleLogout" />
+  <div v-else class="app-shell">
+    <AppHeader :desktop-mode="auth.state.desktopMode" :username="auth.state.user?.username" @logout="handleLogout" />
+    <main v-if="leave.state.ready"><RouterView /></main>
+    <main v-else-if="loadError" class="loading-state load-error" aria-live="polite"><p>{{ loadError }}</p><button class="button secondary" type="button" @click="startLeaveSession">重新读取</button></main>
     <main v-else class="loading-state" aria-live="polite"><span></span><p>正在整理休假记录</p></main>
     <footer class="app-footer"><p>信达国际人力资源部倾情开发 ｜ Developed by Human Resources Department with Love❤️</p></footer>
     <ToastStack />
     <WelcomeDialog
-      v-if="state.ready && state.firstRun"
-      :desktop-mode="state.storageMode === '桌面数据文件夹'"
-      @empty="startEmpty"
-      @import="startImport"
-      @folder="startFolder"
-      @settings="startSettings"
+      v-if="leave.state.ready && leave.state.firstRun"
+      :desktop-mode="auth.state.desktopMode"
     />
   </div>
 </template>

@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
 import { ALL_RECORD_TYPES, THEMES } from '../constants/leaveTypes'
+import { useAuthStore } from '../composables/useAuthStore'
 import { useLeaveStore } from '../composables/useLeaveStore'
 import type { LeaveConfig, ThemePalette } from '../types'
 
-const { state, saveConfig, connectDirectory, exportData, exportConfig } = useLeaveStore()
+const { state, saveConfig, exportData, exportConfig } = useLeaveStore()
+const auth = useAuthStore()
 const draft = reactive<LeaveConfig>(JSON.parse(JSON.stringify(state.config)))
+const passwordForm = reactive({ currentPassword: '', newPassword: '', confirmPassword: '' })
+const passwordStatus = reactive({ error: '', success: '' })
 const currentYear = new Date().getFullYear()
 
 watch(() => state.config, (config) => Object.assign(draft, JSON.parse(JSON.stringify(config))), { deep: true })
@@ -21,6 +25,26 @@ function markCustomTheme() {
 
 async function submit() {
   await saveConfig(JSON.parse(JSON.stringify(draft)))
+}
+
+async function submitPassword() {
+  passwordStatus.error = ''
+  passwordStatus.success = ''
+  if (passwordForm.newPassword.length < 8) {
+    passwordStatus.error = '新密码至少需要 8 个字符。'
+    return
+  }
+  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    passwordStatus.error = '两次输入的新密码不一致。'
+    return
+  }
+  try {
+    await auth.changePassword(passwordForm.currentPassword, passwordForm.newPassword)
+    Object.assign(passwordForm, { currentPassword: '', newPassword: '', confirmPassword: '' })
+    passwordStatus.success = '密码已修改，其他设备上的登录会话已退出。'
+  } catch (reason) {
+    passwordStatus.error = (reason as Error).message
+  }
 }
 </script>
 
@@ -78,15 +102,28 @@ async function submit() {
     </section>
 
     <section class="settings-section storage-section">
-      <header class="settings-heading"><span>04</span><div><h2>数据文件</h2><p>浏览器版可连接指定文件夹；桌面版会在 EXE 同目录的数据文件夹中维护 JSON 文件。</p></div></header>
+      <header class="settings-heading"><span>04</span><div><h2>数据保存</h2><p>{{ state.storageMode === '服务器账户' ? '请假信息和所有设置都保存在当前服务器账户中。' : '桌面版会在 EXE 同目录的数据文件夹中维护 JSON 文件。' }}</p></div></header>
       <div class="storage-card">
-        <div class="storage-status"><span :class="{ connected: state.storageMode === '数据文件夹' || state.storageMode === '桌面数据文件夹' }"></span><div><strong>{{ state.storageMode }}</strong><p>{{ state.directoryName ? `当前文件夹：${state.directoryName}` : '当前使用浏览器 IndexedDB 保存；可随时导出备份。' }}</p></div></div>
-        <div class="storage-actions"><button v-if="state.storageMode !== '桌面数据文件夹'" class="button primary" type="button" @click="connectDirectory">连接数据文件夹</button><button class="button secondary" type="button" @click="exportData">导出记录 JSON</button><button class="button secondary" type="button" @click="exportConfig">导出设置 JSON</button></div>
+        <div class="storage-status"><span class="connected"></span><div><strong>{{ state.storageMode }}</strong><p>{{ state.directoryName ? `当前文件夹：${state.directoryName}` : `当前账户：${auth.state.user?.username || ''}` }}</p></div></div>
+        <div class="storage-actions"><button class="button secondary" type="button" @click="exportData">导出记录 JSON</button><button class="button secondary" type="button" @click="exportConfig">导出设置 JSON</button></div>
       </div>
       <p v-if="state.storageMode === '桌面数据文件夹'" class="browser-note">桌面版会在 EXE 旁自动建立 Cinda Leave Ledger Data 文件夹，并在其中读写 leave-records.json 与 leave-config.json。</p>
-      <p v-else class="browser-note">网页受浏览器安全限制，首次连接文件夹时需要你主动授权。建议选择 index.html 所在的网页构建目录；之后会在同一目录维护 leave-records.json 与 leave-config.json 两个文件。</p>
+      <p v-else class="browser-note">每个员工账户的记录和设置互相隔离；导出功能可用于个人备份。</p>
     </section>
 
-    <div class="settings-save"><p>更改会保存到本机；桌面版及已连接文件夹会同步更新 JSON 文件。</p><button class="button primary" type="button" @click="submit">保存全部设置</button></div>
+    <section v-if="state.storageMode === '服务器账户'" class="settings-section account-section">
+      <header class="settings-heading"><span>05</span><div><h2>修改密码</h2><p>修改后，当前设备保持登录，其他设备上的会话会自动退出。</p></div></header>
+      <p v-if="auth.state.user?.passwordChangeRecommended" class="admin-notice">当前密码由管理员重置，建议修改为你自己的密码。本提示不会阻止继续使用。</p>
+      <form class="password-form" @submit.prevent="submitPassword">
+        <label><span>当前密码</span><input v-model="passwordForm.currentPassword" type="password" autocomplete="current-password" required /></label>
+        <label><span>新密码</span><input v-model="passwordForm.newPassword" type="password" autocomplete="new-password" placeholder="至少 8 个字符" required /></label>
+        <label><span>确认新密码</span><input v-model="passwordForm.confirmPassword" type="password" autocomplete="new-password" required /></label>
+        <button class="button primary" type="submit">修改密码</button>
+      </form>
+      <p v-if="passwordStatus.error" class="form-alert error">{{ passwordStatus.error }}</p>
+      <p v-if="passwordStatus.success" class="admin-message">{{ passwordStatus.success }}</p>
+    </section>
+
+    <div class="settings-save"><p>{{ state.storageMode === '服务器账户' ? '更改会保存到当前服务器账户。' : '更改会同步更新桌面数据文件。' }}</p><button class="button primary" type="button" @click="submit">保存全部设置</button></div>
   </div>
 </template>

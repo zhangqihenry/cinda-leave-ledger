@@ -73,6 +73,29 @@ export interface DataFile {
   updatedAt: string
 }
 
+export type AccountRole = 'user' | 'admin'
+
+export interface AccountUser {
+  username: string
+  role: AccountRole
+  passwordChangeRecommended: boolean
+}
+
+export interface ManagedUser {
+  username: string
+  passwordChangeRecommended: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ServerStateSnapshot {
+  exists: boolean
+  data: DataFile | null
+  config: LeaveConfig | null
+  revision: number
+  updatedAt: string | null
+}
+
 export type ImportSkipReason = '未完成审批' | '审批未通过' | '格式有误'
 
 export interface SkippedImportRow {

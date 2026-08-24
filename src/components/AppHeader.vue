@@ -1,4 +1,6 @@
 <script setup lang="ts">
+defineProps<{ username?: string; desktopMode?: boolean }>()
+const emit = defineEmits<{ logout: [] }>()
 const tabs = [
   { to: '/', label: '首页', index: '01' },
   { to: '/calendar', label: '年度日历', index: '02' },
@@ -22,5 +24,9 @@ const tabs = [
         <span>{{ tab.index }}</span>{{ tab.label }}
       </RouterLink>
     </nav>
+    <div v-if="!desktopMode && username" class="header-account">
+      <span>{{ username }}</span>
+      <button type="button" @click="emit('logout')">退出</button>
+    </div>
   </header>
 </template>

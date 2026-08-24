@@ -1,5 +1,6 @@
 import { FALLBACK_HOLIDAYS } from '../constants/holidays'
 import { OFFICIAL_HOLIDAY_URL } from '../constants/leaveTypes'
+import { isTauriRuntime } from './tauri'
 import type { Holiday } from '../types'
 
 function normalizeDate(value: string): string {
@@ -7,10 +8,14 @@ function normalizeDate(value: string): string {
 }
 export async function loadHongKongHolidays(): Promise<{ holidays: Holiday[]; live: boolean }> {
   try {
-    const response = await fetch(OFFICIAL_HOLIDAY_URL, { cache: 'no-store' })
+    const response = await fetch(isTauriRuntime() ? OFFICIAL_HOLIDAY_URL : '/api/holidays', { cache: 'no-store' })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    const text = (await response.text()).replace(/^\uFEFF/, '')
-    const payload = JSON.parse(text)
+    const payload = JSON.parse((await response.text()).replace(/^\uFEFF/, ''))
+    if (Array.isArray(payload?.holidays)) {
+      const merged = new Map(FALLBACK_HOLIDAYS.map((item) => [item.date, item]))
+      payload.holidays.forEach((item: Holiday) => merged.set(item.date, item))
+      return { holidays: [...merged.values()].sort((a, b) => a.date.localeCompare(b.date)), live: true }
+    }
     const events = payload?.vcalendar?.[0]?.vevent
     if (!Array.isArray(events)) throw new Error('Unexpected holiday data')
     const official: Holiday[] = events.map((event: { dtstart: [string]; summary: string }) => ({

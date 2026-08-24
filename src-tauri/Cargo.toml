@@ -1,6 +1,6 @@
 [package]
 name = "cinda-leave-ledger"
-version = "0.2.0"
+version = "0.3.0"
 description = "信达国际员工个人假期管理工具"
 authors = ["Human Resources Department"]
 edition = "2021"
