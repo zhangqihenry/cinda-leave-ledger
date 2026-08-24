@@ -25,8 +25,11 @@ const tabs = [
       </RouterLink>
     </nav>
     <div v-if="!desktopMode && username" class="header-account">
-      <span>{{ username }}</span>
-      <button type="button" @click="emit('logout')">退出</button>
+      <span class="header-account-index">06</span>
+      <div class="header-account-body">
+        <strong>{{ username }}</strong>
+        <button type="button" @click="emit('logout')">退出</button>
+      </div>
     </div>
   </header>
 </template>

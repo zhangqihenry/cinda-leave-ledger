@@ -206,11 +206,11 @@ async function completeFirstRunSetup(
   showToast(preview ? '初始设置和 OA 记录已保存' : '初始设置已保存')
 }
 
-async function saveConfig(config: LeaveConfig) {
+async function saveConfig(config: LeaveConfig, notify = true) {
   state.config = normalizeConfig(JSON.parse(JSON.stringify(config)))
   applyTheme(state.config)
   await persist()
-  showToast('设置已保存')
+  if (notify) showToast('设置已保存')
 }
 
 async function completeFirstRun() {

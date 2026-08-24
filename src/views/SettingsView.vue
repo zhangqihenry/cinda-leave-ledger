@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { ALL_RECORD_TYPES, THEMES } from '../constants/leaveTypes'
 import { useAuthStore } from '../composables/useAuthStore'
 import { useLeaveStore } from '../composables/useLeaveStore'
@@ -11,8 +11,18 @@ const draft = reactive<LeaveConfig>(JSON.parse(JSON.stringify(state.config)))
 const passwordForm = reactive({ currentPassword: '', newPassword: '', confirmPassword: '' })
 const passwordStatus = reactive({ error: '', success: '' })
 const currentYear = new Date().getFullYear()
+const autoSaveStatus = ref<'saved' | 'pending' | 'saving' | 'error'>('saved')
+const autoSaveError = ref('')
+let autoSaveTimer: number | null = null
+let autoSaveRunning = false
+let autoSaveDirty = false
 
-watch(() => state.config, (config) => Object.assign(draft, JSON.parse(JSON.stringify(config))), { deep: true })
+const autoSaveLabel = computed(() => ({
+  saved: '所有更改已保存',
+  pending: '等待自动保存',
+  saving: '正在自动保存',
+  error: '自动保存失败',
+})[autoSaveStatus.value])
 
 function selectTheme(theme: ThemePalette) {
   draft.theme = JSON.parse(JSON.stringify(theme))
@@ -23,9 +33,45 @@ function markCustomTheme() {
   draft.theme.name = '自定义主题'
 }
 
-async function submit() {
-  await saveConfig(JSON.parse(JSON.stringify(draft)))
+async function flushAutoSave() {
+  if (autoSaveRunning) return
+  autoSaveRunning = true
+  try {
+    while (autoSaveDirty) {
+      autoSaveDirty = false
+      autoSaveStatus.value = 'saving'
+      try {
+        await saveConfig(JSON.parse(JSON.stringify(draft)), false)
+      } catch (reason) {
+        autoSaveError.value = (reason as Error).message || '无法保存设置。'
+        autoSaveStatus.value = 'error'
+        return
+      }
+    }
+    autoSaveStatus.value = 'saved'
+  } finally {
+    autoSaveRunning = false
+  }
 }
+
+function scheduleAutoSave() {
+  autoSaveDirty = true
+  autoSaveError.value = ''
+  autoSaveStatus.value = 'pending'
+  if (autoSaveTimer) window.clearTimeout(autoSaveTimer)
+  autoSaveTimer = window.setTimeout(() => {
+    autoSaveTimer = null
+    void flushAutoSave()
+  }, 650)
+}
+
+watch(draft, scheduleAutoSave, { deep: true })
+
+onBeforeUnmount(() => {
+  if (autoSaveTimer) window.clearTimeout(autoSaveTimer)
+  autoSaveTimer = null
+  if (autoSaveDirty) void flushAutoSave()
+})
 
 async function submitPassword() {
   passwordStatus.error = ''
@@ -50,7 +96,12 @@ async function submitPassword() {
 
 <template>
   <div class="page settings-page">
-    <section class="page-intro"><div><p class="eyebrow">SETTINGS / 设置</p><h1>按你的规则来。</h1><p class="intro-copy">当年额度、颜色和文件保存方式都会随设置一并保存。</p></div><button class="button primary save-top" type="button" @click="submit">保存全部设置</button></section>
+    <section class="page-intro">
+      <div><p class="eyebrow">SETTINGS / 设置</p><h1>按你的规则来。</h1><p class="intro-copy">当年额度、颜色和文件保存方式都会自动保存。</p></div>
+      <div class="auto-save-status" :class="`is-${autoSaveStatus}`" role="status" aria-live="polite" :title="autoSaveError">
+        <span aria-hidden="true"></span><div><small>AUTO SAVE</small><strong>{{ autoSaveLabel }}</strong></div>
+      </div>
+    </section>
 
     <section class="settings-section">
       <header class="settings-heading"><span>01</span><div><h2>{{ currentYear }} 年假期额度</h2><p>年假额度可包含经审批从上一年带入的天数；特别假不能结转。</p></div></header>
@@ -66,7 +117,7 @@ async function submitPassword() {
     </section>
 
     <section class="settings-section">
-      <header class="settings-heading"><span>02</span><div><h2>网站主题</h2><p>{{ THEMES.length }} 套预设会自动换行排列，未来增加主题时无需改变页面布局。</p></div></header>
+      <header class="settings-heading"><span>02</span><div><h2>网站主题</h2></div></header>
       <div class="theme-grid">
         <button
           v-for="(theme, index) in THEMES"
@@ -124,6 +175,5 @@ async function submitPassword() {
       <p v-if="passwordStatus.success" class="admin-message">{{ passwordStatus.success }}</p>
     </section>
 
-    <div class="settings-save"><p>{{ state.storageMode === '服务器账户' ? '更改会保存到当前服务器账户。' : '更改会同步更新桌面数据文件。' }}</p><button class="button primary" type="button" @click="submit">保存全部设置</button></div>
   </div>
 </template>

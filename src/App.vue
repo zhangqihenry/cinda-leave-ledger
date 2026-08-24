@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import AppHeader from './components/AppHeader.vue'
 import ToastStack from './components/ToastStack.vue'
 import WelcomeDialog from './components/WelcomeDialog.vue'
@@ -22,10 +22,6 @@ async function startLeaveSession() {
   }
 }
 
-async function handleAuthenticated() {
-  if (auth.state.user?.role === 'user') await startLeaveSession()
-}
-
 async function handleLogout() {
   try {
     await auth.logout()
@@ -34,10 +30,26 @@ async function handleLogout() {
   }
 }
 
+watch(
+  () => {
+    if (!auth.state.ready) return ''
+    if (auth.state.desktopMode) return 'desktop'
+    if (auth.state.user?.role === 'user') return `user:${auth.state.user.username}`
+    return ''
+  },
+  async (sessionKey, previousSessionKey) => {
+    if (sessionKey) {
+      await startLeaveSession()
+    } else if (previousSessionKey) {
+      leave.resetSession()
+    }
+  },
+  { immediate: true },
+)
+
 onMounted(async () => {
   try {
     await auth.initialize()
-    if (auth.state.desktopMode || auth.state.user?.role === 'user') await startLeaveSession()
   } catch (error) {
     loadError.value = (error as Error).message || '应用初始化失败。'
   }
@@ -46,7 +58,7 @@ onMounted(async () => {
 
 <template>
   <main v-if="!auth.state.ready" class="standalone-loading loading-state" aria-live="polite"><span></span><p>正在启动休假账本</p></main>
-  <AuthView v-else-if="!auth.state.desktopMode && !auth.state.user" @authenticated="handleAuthenticated" />
+  <AuthView v-else-if="!auth.state.desktopMode && !auth.state.user" />
   <AdminView v-else-if="auth.state.user?.role === 'admin'" @logout="handleLogout" />
   <div v-else class="app-shell">
     <AppHeader :desktop-mode="auth.state.desktopMode" :username="auth.state.user?.username" @logout="handleLogout" />

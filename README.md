@@ -79,7 +79,7 @@ docker compose pull
 docker compose up -d
 ```
 
-Compose 默认使用 `latest` 标签，也可以将镜像标签固定为具体版本，例如 `ghcr.io/zhangqihenry/cinda-leave-ledger:0.3.0`。
+Compose 默认使用 `latest` 标签，也可以将镜像标签固定为具体版本，例如 `ghcr.io/zhangqihenry/cinda-leave-ledger:0.3.1`。
 
 ### 数据与备份
 
@@ -145,4 +145,4 @@ npm run desktop:build:windows
 - 推送到 `main` 分支后，GitHub Actions 会生成 Windows x64 EXE，产物可在对应的 Actions 运行记录中下载。
 - 推送 `v*` 标签后，Windows EXE 会自动添加到 GitHub Releases。
 - 推送到 `main` 分支后，Docker 镜像会发布为 `ghcr.io/zhangqihenry/cinda-leave-ledger:latest`。
-- 推送 `v*` 标签后，Docker 镜像会同时发布版本标签，例如 `0.3.0` 和 `0.3`。
+- 推送 `v*` 标签后，Docker 镜像会同时发布版本标签，例如 `0.3.1` 和 `0.3`。

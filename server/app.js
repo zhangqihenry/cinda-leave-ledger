@@ -87,6 +87,7 @@ export async function createApp(config, options = {}) {
         "script-src": ["'self'"],
         "style-src": ["'self'", "'unsafe-inline'"],
         "connect-src": ["'self'"],
+        "upgrade-insecure-requests": null,
       },
     },
   }))

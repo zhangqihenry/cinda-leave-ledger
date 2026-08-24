@@ -44,6 +44,14 @@ async function register(agent, username, password = 'Personal123!') {
   return response.body.csrfToken
 }
 
+test('content security policy supports direct HTTP access on a local network', async () => {
+  await withApp(async (app) => {
+    const response = await request(app).get('/api/health').expect(200)
+    assert.match(response.headers['content-security-policy'], /script-src 'self'/)
+    assert.doesNotMatch(response.headers['content-security-policy'], /upgrade-insecure-requests/)
+  })
+})
+
 test('employee registration validates the ID and keeps user states isolated', async () => {
   await withApp(async (app) => {
     await request(app).post('/api/auth/register').send({ username: '700809', password: 'Personal123!' }).expect(400)

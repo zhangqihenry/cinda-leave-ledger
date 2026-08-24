@@ -2,7 +2,6 @@
 import { computed, reactive, ref } from 'vue'
 import { useAuthStore } from '../composables/useAuthStore'
 
-const emit = defineEmits<{ authenticated: [] }>()
 const { login, register } = useAuthStore()
 const mode = ref<'login' | 'register'>('login')
 const busy = ref(false)
@@ -36,7 +35,6 @@ async function submit() {
   try {
     if (mode.value === 'login') await login(username, form.password)
     else await register(username, form.password)
-    emit('authenticated')
   } catch (reason) {
     error.value = (reason as Error).message || '操作失败，请稍后重试。'
   } finally {
